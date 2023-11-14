@@ -8,7 +8,8 @@
 #define MAX_THREADS 2
 
 typedef struct Task{
-	int a, b;
+	void (*taskFunction)(int, int);
+	int arg1,arg2;
 }Task;
 
 Task taskQueue[256];
@@ -19,10 +20,28 @@ pthread_mutex_t mutexTaskQueue;
 pthread_cond_t condQueue;
 
 void executeTask(Task* task)
-{	
-	int result = task->a + task->b;
-	printf("The sum of %d and %d is =%d\n", task->a, task->b, result);
+{
+	task->taskFunction(task->arg1, task->arg2);	
+//	int result = task->a + task->b;
+//	printf("The sum of %d and %d is =%d\n", task->a, task->b, result);
 
+}
+
+void sumAndProduct(int a, int b)
+{
+	int sum = a+b;
+	int prod = a*b;
+	printf("Sum and product of %d and %d is %d and %d respectively.\n",
+			a,b,sum,prod);
+}
+
+void diffAndDiv(int a, int b)
+{
+	int diff = abs(a-b);
+	int div = 0;
+	if(a==0 || b==0) div = 0; 
+	else div =  (int) a/b;
+	printf("Difference and division of %d and %d is %d and %d respectively.\n", a,b,diff,div);
 }
 
 void submitTask(Task task)
@@ -46,8 +65,6 @@ void* startThread(void* arg)
 		{
 			pthread_cond_wait(&condQueue, &mutexTaskQueue);
 		}
-
-		found=1;
 		task = taskQueue[0];
 		for(int i=0;i<taskCount;i++)
 		{
@@ -74,8 +91,9 @@ int main(int* argc,char* argv[])
 	for(int i=0;i<100;i++)
 	{
 		Task t = {
-			.a = rand() % 100,
-			.b = rand() % 100
+			.taskFunction = i%2==0?sumAndProduct:&diffAndDiv,
+			.arg1 = rand()%100,
+			.arg2 = rand()%200
 		};
 		submitTask(t);
 
